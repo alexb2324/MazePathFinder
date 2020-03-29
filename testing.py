@@ -1,5 +1,8 @@
-import numpy
+from tkinter import *
 
-lol = numpy.zeros((40,40))
+root_scr = Tk()
 
-print(lol.)
+mylabel = Label(root_scr, text="hlelafaw")
+mylabel.pack()
+
+root_scr.mainloop()
