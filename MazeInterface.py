@@ -1,12 +1,69 @@
 import numpy
 import pygame
+import os
+
 
 from tkinter import *
 
 
 List = [2,3,5,15,1]
 
-class GameWindow:
+class Interface:
+
+    def __init__(self, width, height):
+        self.width = str(width)
+        self.height = str(height)
+        
+
+    def caw(self):
+        #g.run_game()
+        pass
+
+    def algorithm_a(self, root):
+        root.destroy()
+        root = Tk()
+
+        embed = Frame(root, width= 800, height=800)  # creates embed frame for pygame window
+        embed.grid(columnspan=(600), rowspan=500)  # Adds grid
+        embed.pack(side=TOP)  # packs window to the left
+
+        buttonwin = Frame(root, width=75, height=500)
+        buttonwin.pack(side=LEFT)
+
+        os.environ['SDL_WINDOWID'] = str(embed.winfo_id())
+        os.environ['SDL_VIDEODRIVER'] = 'windib'
+
+        button1 = Button(buttonwin, text='Start')
+        button1.pack(side=LEFT)
+        root.update()
+
+
+
+
+
+    def algorithm_dijkstra(self):
+        pass
+
+
+    def menu_window(self):
+        root = Tk()
+        root.title('Hehexd')
+        root.geometry(self.width + "x" + self.height)
+
+        title_lable = Label(root, text="Maze/PathFinder", pady=20, padx=20)
+        title_lable.grid(row=0, columnspan=2)
+
+        # buttons
+        button_a = Button(root, text ="A* Algorithm", command = lambda: self.algorithm_a(root), height = 4)
+        button_a.grid(row=1)
+
+        button_dijkstra = Button(root, text ="Dijkstra's  Algorithm")
+        button_dijkstra.grid(row=2)
+
+        root.mainloop()
+
+
+class GameWindow(Interface):
     BACKGROUND = (220,220,220)
 
     COLORS = {
@@ -18,6 +75,7 @@ class GameWindow:
     }
 
     def __init__(self, width, height):
+        Interface.__init__(width, height)
         self.width = width
         self.height = height
         self.box_dim = 20
