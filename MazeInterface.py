@@ -63,7 +63,7 @@ class Interface:
         root.mainloop()
 
 
-class GameWindow(Interface):
+class GameWindow():
     BACKGROUND = (220,220,220)
 
     COLORS = {
@@ -75,7 +75,6 @@ class GameWindow(Interface):
     }
 
     def __init__(self, width, height):
-        Interface.__init__(width, height)
         self.width = width
         self.height = height
         self.box_dim = 20
@@ -102,10 +101,14 @@ class GameWindow(Interface):
     def run_game(self):
         run = True
         clock = pygame.time.Clock()
-
+        self.init_window()
         while run:
-            self.init_window()
             pygame.display.update()
+            clock.tick(1000)
+            self.box_updater((255,0,0),0,20,20)
+            self.box_updater((255, 0, 0), 0, 21, 21)
+            self.box_updater((255, 0, 0), 0, 20, 21)
+            self.box_updater((255, 0, 0), 0, 21, 20)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
