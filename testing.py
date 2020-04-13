@@ -3,13 +3,12 @@ from tkinter import font as tkfont
 import os
 import pygame
 import numpy as np
-import random
-import math
+
 
 class SampleApp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.title_font = tkfont.Font(family='Helvetica', size=18, weight="bold", slant="italic")
 
@@ -44,7 +43,7 @@ class SampleApp(tk.Tk):
 class StartPage(tk.Frame):
 
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
+        super().__init__(parent)
         self.controller = controller
 
         label = tk.Label(self, text="This is the main menu", font=controller.title_font)
@@ -52,7 +51,10 @@ class StartPage(tk.Frame):
 
         button1 = tk.Button(self, text="Go to Page One",
                             command=lambda: controller.show_frame("PageOne"))
+
+
         button1.pack()
+
 
 
 class PageOne(tk.Frame):
@@ -67,13 +69,12 @@ class PageOne(tk.Frame):
     }
 
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
+        super().__init__(parent)
         self.width = 600
         self.height = 600
         self.box_dim = 20
         self.grid_list = np.zeros((int(self.width / self.box_dim), int(self.height / self.box_dim)))
         self.controller = controller
-
 
         label = tk.Label(self, text="Maze/Path Finder", font=controller.title_font)
         label.pack(side="top", fill="x", pady=10)
@@ -87,7 +88,6 @@ class PageOne(tk.Frame):
         self.window = pygame.display.set_mode((self.width, self.height))
         self.run_game()
 
-
         button_win = tk.Frame(self, width=600, height=50)
         button_win.pack(side="bottom")
 
@@ -97,164 +97,94 @@ class PageOne(tk.Frame):
         button_start = tk.Button(button_win, text="Run Algorithm")
         button_start.pack(side="left")
 
-        button_setup = tk.Button(button_win, text="Setup Configurations", command= PopUps)
+        button_setup = tk.Button(button_win, text="Setup Configurations", command= lambda: self.run_pop())
         button_setup.pack(side="left")
 
+    def run_pop(self):
+        popup_win = tk.Tk()
 
+        start_entry = tk.Entry(popup_win)
+        start_entry.pack(side="left")
 
-    def init_grid(self):
-        for i in range(int(self.width/self.box_dim)):
-            for j in range(int(self.height/self.box_dim)):
-                pygame.draw.rect(self.window, self.COLORS[1], (i * self.box_dim, j * self.box_dim, self.box_dim, self.box_dim), 1)
-
-
-    def box_updater(self, color, state, i = 1, j = 1):
-        pygame.draw.rect(self.window, color, (i * self.box_dim, j * self.box_dim, self.box_dim, self.box_dim), state)
-        self.update()
-
-
-    def init_window(self):
-        self.window.fill(self.BACKGROUND)
-        self.init_grid()
-
-
-    def run_game(self):
-        run = True
-        clock = pygame.time.Clock()
-        self.init_window()
-        pygame.display.update()
-        self.update()
-        '''while run:
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False'''
-
-
-class PopUps:
-
-    def __init__(self):
-        self.popup_win = tk.Tk()
-
-        start_entry = tk.Entry(self.popup_win)
-        start_entry.pack(side = "left")
-
-        end_entry = tk.Entry(self.popup_win)
-        end_entry.pack(side ="left")
+        end_entry = tk.Entry(popup_win)
+        end_entry.pack(side="left")
 
         var_r = tk.IntVar()
         var_r.get()
 
-        astar_radio_btn = tk.Radiobutton(self.popup_win, variable=var_r, value = "A", text="A*")
+        astar_radio_btn = tk.Radiobutton(popup_win, variable=var_r, value="A", text="A*")
         astar_radio_btn.pack()
 
-        dijkstra_radio_btn = tk.Radiobutton(self.popup_win, variable=var_r, value = "D", text="Dijkstra")
+        dijkstra_radio_btn = tk.Radiobutton(popup_win, variable=var_r, value="D", text="Dijkstra")
         dijkstra_radio_btn.pack()
 
-
-        label = tk.Label(self.popup_win, text="hi")
+        label = tk.Label(popup_win, text="hi")
         label.pack()
 
-        close_button = tk.Button(self.popup_win, text="close", command=lambda: self.popup_win.destroy())
+        close_button = tk.Button(popup_win, text="close", command=lambda: popup_win.destroy())
         close_button.pack()
 
-        rand_button = tk.Button(self.popup_win, text="random", command= lambda: self.random_fixed_points())
+        rand_button = tk.Button(popup_win, text="random", command=lambda: self.random_fixed_points(popup_win))
         rand_button.pack()
 
+        popup_win.mainloop()
 
-        self.popup_win.mainloop()
+    def random_fixed_points(self, popup_win):
+        rand_list = np.random.choice(30, 4, True)
 
-    def random_fixed_points(self):
-        rand_list = np.random.choice(20, 4, True)
-
-        print(rand_list[2:])
-        print(rand_list[:-2])
-
-        print(np.linalg.norm(rand_list[2:] - rand_list[:-2]))
-        print(np.all(rand_list))
-        while np.all(rand_list) or (np.linalg.norm(rand_list[2:] - rand_list[:-2]) <= 5):
+        while np.array_equal(rand_list[:-2], rand_list[2:]) or (np.linalg.norm(rand_list[2:] - rand_list[:-2]) <= 15):
             rand_list = np.random.choice(20, 4, True)
 
-        rand_start = rand_list[2:]
-        rand_end = rand_list[:-2]
+        rand_start = rand_list[:-2]
+        rand_end = rand_list[2:]
 
-       # PageOne.box_updater((0,255,0),rand_start[0], rand_start[1], 0)
+        self.box_updater((255,0,0), 0, rand_start[0], rand_start[1])
+        self.box_updater((255,0,0), 0, rand_end[0], rand_end[1])
+        pygame.display.update()
+        self.update()
 
-        self.popup_win.destroy()
+        popup_win.destroy()
 
-
-    def set_up(self):
-        pass
-
-    def post_run_info(self):
-        pass
-
-    def run(self):
-        self.set_up()
-
-
-
-
-'''class GameWindow:
-    BACKGROUND = (220, 220, 220)
-
-    COLORS = {
-        0: (255, 255, 255),
-        1: (0, 0, 0),
-        2: (255, 0, 0),
-        3: (0, 255, 0),
-        4: (220, 220, 220)
-    }
-
-    def __init__(self):
-        self.width = 600
-        self.height = 600
-        self.box_dim = 20
-        self.grid_list = np.zeros((int(self.width / self.box_dim), int(self.height / self.box_dim)))
-        self.window = pygame.display.set_mode((self.width, self.height))
-
-
+    def box_updater(self, color, state, i = 1, j = 1):
+        pygame.draw.rect(self.window, color, (i * self.box_dim, j * self.box_dim, self.box_dim, self.box_dim), state)
 
     def init_grid(self):
         for i in range(int(self.width/self.box_dim)):
             for j in range(int(self.height/self.box_dim)):
                 pygame.draw.rect(self.window, self.COLORS[1], (i * self.box_dim, j * self.box_dim, self.box_dim, self.box_dim), 1)
 
-
-    def box_updater(self, color, state, i = 1, j = 1):
-        pygame.draw.rect(self.window, color, (i * self.box_dim, j * self.box_dim, self.box_dim, self.box_dim), state)
-        SampleApp().update()
-
-    def init_window(self):
+    def run_game(self):
         self.window.fill(self.BACKGROUND)
         self.init_grid()
+        pygame.display.update()
+        self.update()
+        '''run = True
+
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()'''
 
 
-    def run_game(self):
-        run = True
-        clock = pygame.time.Clock()
-        self.init_window()
-        while run:
-            pygame.display.update()
-            SampleApp().update()
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False'''
-
-
-
-
-
-'''class PageTwo(tk.Frame):
+'''class PopUps(tk.Frame):
 
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
+        super().__init__(parent, controller)
         self.controller = controller
-        label = tk.Label(self, text="This is page 2", font=controller.title_font)
-        label.pack(side="top", fill="x", pady=10)
-        button = tk.Button(self, text="Go to the start page",
-                           command=lambda: controller.show_frame("StartPage"))
-        button.pack()'''
+
+
+
+
+
+
+    def post_run_info(self):
+        pass'''
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":

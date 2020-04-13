@@ -1,10 +1,14 @@
 import numpy as np
 import math
 
+open_list = []
+closed_list = []
+
+
 
 class Node:
 
-    def __init__(self, pos, parent=None):
+    def __init__(self, pos, parent = None):
         self.parent = parent
         self.pos = pos
 
@@ -16,27 +20,34 @@ class Node:
         return self.pos == other.pos
 
 
-def path(maze):
-    start = Node([0, 0], None)
-    start.f = start.g = start.h = 0
-    end = Node([29, 29], None)
-    end.f = end.g = end.h = 0
+start = Node([0, 0], None)
+start.f = start.g = start.h = 0
+end = Node([29,29], None)
+end.f = end.g = end.h = 0
 
-    path_nodes = search_alg(start, end, maze)
-    path_list = [tuple(node.pos) for node in path_nodes]
-
-    return path_list
+open_list.append(start)
 
 
-def search_alg(start, end, maze):
-    open_list = []
-    closed_list = []
+
+def path_step_wise(maze):
+    done = False
+
+    node_open_list, node_closed_list = search_alg_step_wise(end, maze)
+
+    if tuple(node_closed_list[-1].pos) == tuple(end.pos):
+        done = True
+
+    return done, node_closed_list, node_open_list
+
+
+
+
+
+
+def search_alg_step_wise(end, maze):
     no_columns, no_rows = np.shape(maze)
 
-    open_list.append(start)
-    count = 0
-    while len(open_list) > 0:
-
+    if len(open_list) > 0:
         current_node = open_list[0]
         current_index = 0
 
@@ -47,9 +58,6 @@ def search_alg(start, end, maze):
 
         open_list.pop(current_index)
         closed_list.append(current_node)
-
-        if current_node == end:
-            return closed_list
 
         i = current_node.pos[0]
         j = current_node.pos[1]
@@ -73,29 +81,19 @@ def search_alg(start, end, maze):
 
         for node in node_list:
 
-            if node in closed_list:
-                val_index = closed_list.index(node)
-                if closed_list[val_index].f < node.f:
-                    open_list.append(closed_list[val_index])
-                    continue
+            if len([past_node for past_node in closed_list if past_node == node]) > 0:
+                continue
 
             node.g = current_node.g + 1
             node.h = math.sqrt((node.pos[0] - end.pos[0]) ** 2 + (node.pos[1] - end.pos[1]) ** 2)
             node.f = node.g + node.h
 
-            if node in open_list:
-                val_index = open_list.index(node)
-                print("hello")
-                if open_list[val_index].f < node.f:
-                    continue
+            if len([i for i in open_list if node == i and node.g > i.g]) > 0:
+                continue
 
             open_list.append(node)
-            print(node.pos)
-            count += 1
-            print(count)
 
-
-
+        return open_list, closed_list
 
 
 
