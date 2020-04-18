@@ -9,6 +9,7 @@ import AStarAlgorithm as astar
 
 import time
 
+
 class App:
 
     def __init__(self, master, window):
@@ -119,7 +120,7 @@ class GameMenu(App):
         button2 = Button(button_window, text = "Setup", command = lambda: PopUps(self.master, self.window).run_pop())
         button2.pack(side = RIGHT)
 
-        button3 = Button(button_window, text = "Reset", command = lambda: self.reset_grid())
+        button3 = Button(button_window, text = "Clear Screen", command = lambda: self.reset_grid())
         button3.pack(side = RIGHT)
 
     def run_game(self):
@@ -140,7 +141,6 @@ class GameMenu(App):
                         if mouse_dragging:
                             mouse_pos = pygame.mouse.get_pos()
                             mouse_pos = (int(mouse_pos[0]/self.box_dim), int(mouse_pos[1]/self.box_dim))
-                            print(mouse_pos)
                             self.box_updater(self.COLORS["BLACK"], 0, mouse_pos[0], mouse_pos[1])
                             self.grid_list[mouse_pos] = 1
 
@@ -154,30 +154,33 @@ class PopUps(GameMenu):
         super().__init__(master, window)
         self.popup_win = Toplevel()
         self.popup_win.geometry("400x250")
-        self.popup_win_font = tkfont.Font(family='Helvetica', size=14)
+        self.popup_win_font = tkfont.Font(family = 'Helvetica', size = 14)
 
     def fixed_points(self, start_str, end_str, step, alg):
-        try:
-            if alg:
-                total_str = start_str[1:-1:1] + ", " + end_str[1:-1:1]
-                fixed_point_list = [int(num) for num in total_str.split(', ')]
+        if alg:
+            try:
+                total_str = start_str + ", " + end_str
+                total_str.replace(" ", "")
+                fixed_point_list = [int(num) for num in total_str.split(',')]
+                if (max(fixed_point_list) >= int(self.grid_list.shape[0])) or (min(fixed_point_list) < 0):
+                    msbox.showerror("Coordinate Error", "Coordinate inputs out of bounds\nPlease try again")
+                else:
+                    GameMenu.start_point = fixed_point_list[:-2]
+                    GameMenu.end_point = fixed_point_list[-2:]
+                    GameMenu.step_alg = step
 
-                GameMenu.start_point = fixed_point_list[:-2]
-                GameMenu.end_point = fixed_point_list[-2:]
-                GameMenu.step_alg = step
+                    self.box_updater(self.COLORS["GREEN"], 0, self.start_point[0], self.start_point[1])
+                    self.box_updater(self.COLORS["RED"], 0, self.end_point[0], self.end_point[1])
 
-                self.box_updater(self.COLORS["GREEN"], 0, self.start_point[0], self.start_point[1])
-                self.box_updater(self.COLORS["RED"], 0, self.end_point[0], self.end_point[1])
-
-                self.popup_win.destroy()
-            elif not alg:
-                msbox.showerror("Implementation Error", "Algorithm not implemented, please choose A* algorithm")
-            else:
-                msbox.showerror("Input Error", "No Algorithm chosen, please try again")
-
-        except ValueError:
-            if start_str == "" or end_str == "":
+                    self.popup_win.destroy()
+            except ValueError:
                 msbox.showerror("Coordinate Error", "No coordinate inputs, please try again")
+            '''else:
+                msbox.showerror("Input Error", "Coordinate inputs incorrect, please try again")'''
+        elif not alg:
+            msbox.showerror("Implementation Error", "Djikstra algorithm not implemented\nPlease choose A* algorithm")
+        else:
+            msbox.showerror("Input Error", "No Algorithm chosen, please try again")
 
     def run_pop(self):
         self.popup_win.title("Configurations")
@@ -218,11 +221,10 @@ class PopUps(GameMenu):
                 rand_list = np.random.choice(20, 4, True)
 
             rand_list = list(rand_list)
-            start_entry.insert(0, "%s" % rand_list[-2:])
-            end_entry.insert(0, "%s" % rand_list[:-2])
+            start_entry.insert(0, "%s" % str(rand_list[-2:])[1:-1])
+            end_entry.insert(0, "%s" % str(rand_list[:-2])[1:-1])
 
         alg_var = IntVar()
-
         step_var = IntVar()
 
         radio_label = Label(config_settings_win, text = "Algorithm", padx = 20, pady = 15)
@@ -240,17 +242,12 @@ class PopUps(GameMenu):
         step_check_button = Checkbutton(config_settings_win, variable = step_var, text = "")
         step_check_button.grid(row=3, column = 1)
 
-
-
         close_button = tk.Button(config_button_win, text="Confirm", command=lambda: self.fixed_points(start_entry.get(),
         end_entry.get(), step_var.get(), alg_var.get()))
         close_button.pack(side = RIGHT)
 
         rand_button = tk.Button(config_button_win, text="Generate Random Coordinates", command=lambda: random_points())
         rand_button.pack(side = LEFT)
-
-
-
 
 
 if __name__ == "__main__":

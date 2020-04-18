@@ -1,6 +1,7 @@
 import numpy as np
 import math
 
+
 class Node:
 
     def __init__(self, pos, parent = None):
