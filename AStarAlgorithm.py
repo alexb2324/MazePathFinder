@@ -1,11 +1,6 @@
 import numpy as np
 import math
 
-open_list = []
-closed_list = []
-
-
-
 class Node:
 
     def __init__(self, pos, parent = None):
@@ -20,19 +15,9 @@ class Node:
         return self.pos == other.pos
 
 
-start = Node([0, 0], None)
-start.f = start.g = start.h = 0
-end = Node([29,29], None)
-end.f = end.g = end.h = 0
-
-open_list.append(start)
-
-
-
-def path_step_wise(maze):
+def path_step_wise(maze, end, open_list, closed_list):
     done = False
-
-    node_open_list, node_closed_list = search_alg_step_wise(end, maze)
+    node_open_list, node_closed_list = search_alg_step_wise(maze, end, open_list, closed_list)
 
     if tuple(node_closed_list[-1].pos) == tuple(end.pos):
         done = True
@@ -40,25 +25,21 @@ def path_step_wise(maze):
     return done, node_closed_list, node_open_list
 
 
-
-
-
-
-def search_alg_step_wise(end, maze):
+def search_alg_step_wise(maze, end, open_list, closed_list):
     no_columns, no_rows = np.shape(maze)
 
     if len(open_list) > 0:
-        current_node = open_list[0]
+
         current_index = 0
 
-        for index, item in enumerate(open_list):
-            if item.f < current_node.f:
-                current_node = item
+        for index in range(len(open_list)):
+            if open_list[index].f < open_list[current_index].f:
                 current_index = index
+
+        current_node = open_list[current_index]
 
         open_list.pop(current_index)
         closed_list.append(current_node)
-
         i = current_node.pos[0]
         j = current_node.pos[1]
         current_movement_list = [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1], [i - 1, j - 1], [i + 1, j + 1],
@@ -80,18 +61,20 @@ def search_alg_step_wise(end, maze):
             node_list.append(new_node)
 
         for node in node_list:
+            if node not in closed_list:
+                temp_g = current_node.g + 1
+                if node in open_list:
+                    if node.g > temp_g:
+                        node.g = temp_g
+                else:
+                    node.g = temp_g
+                    open_list.append(node)
 
-            if len([past_node for past_node in closed_list if past_node == node]) > 0:
-                continue
-
-            node.g = current_node.g + 1
             node.h = math.sqrt((node.pos[0] - end.pos[0]) ** 2 + (node.pos[1] - end.pos[1]) ** 2)
             node.f = node.g + node.h
 
-            if len([i for i in open_list if node == i and node.g > i.g]) > 0:
-                continue
-
-            open_list.append(node)
+            if node.parent is None:
+                node.parent = current_node
 
         return open_list, closed_list
 

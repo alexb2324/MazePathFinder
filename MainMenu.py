@@ -1,231 +1,274 @@
 import pygame
 import tkinter as tk
 from tkinter import *
+from tkinter import messagebox as msbox
+from tkinter import font as tkfont
 import numpy as np
 import os
 import AStarAlgorithm as astar
 
-import timeit
 import time
 
 class App:
 
-    def __init__(self, master):
+    def __init__(self, master, window):
         self.master = master
+        self.window = window
 
     def master_reset(self):
         self.master.destroy()
         self.master = Tk()
 
     def run_app(self):
-        menu = MainMenu(self.master)
-        menu.run_main()
-
-
-
-
-class MainMenu(App):
-
-    def __init__(self, master):
-        super().__init__(master)
-        self.width = 400
-        self.height = 400
-        self.master.title('Hehexd')
-        self.master.geometry(str(self.width) + "x" + str(self.height))
-
-
-    def run_main(self):
-        title_label = Label(self.master, text="Maze/PathFinder", pady=20, padx=20)
-        title_label.pack(side=TOP)
-
-        # buttons
-        button_a = Button(self.master, text="Start game", command=lambda: self.algorithm_a())
-        button_a.pack(side=TOP)
-
-    def algorithm_a(self):
-        self.master_reset()
-        game_menu = GameMenu(self.master)
-        game_menu.run_game()
-
-
+        game = GameMenu(self.master, self.window)
+        game.run_game()
 
 
 class GameMenu(App):
 
-
     BACKGROUND = (220,220,220)
 
     COLORS = {
-        0: (255,255,255),
-        1 : (0,0,0),
+        "WHITE": (255,255,255),
+        "BLACK": (0,0,0),
         "RED": (255,0,0),
         "GREEN": (0,255,0),
         "GRAY": (220,220,220),
-        "BLUE": (0,0,255)
+        "BLUE": (0,0,255),
+        "CYAN": (0,255,255),
+        "MAGENTA": (255,0,255)
     }
 
-    def __init__(self, master):
-        super().__init__(master)
-        self.width = 600
-        self.height = 600
+    end_point = []
+    start_point = []
+    step_alg = False
+
+    def __init__(self, master, window):
+        super().__init__(master, window)
         self.box_dim = 20
-        self.grid_list = np.zeros((int(self.width/self.box_dim), int(self.height/self.box_dim)))
+        self.grid_list = np.zeros((int(600/self.box_dim), int(600/self.box_dim)))
         self.master.geometry("700x700")
 
-        self.win_frame = tk.Frame(self.master).pack(side="top", fill="both", expand=True)
-
-        labelwin = tk.Frame(self.win_frame).pack(side=TOP)
-        label = Label(labelwin, text="hello world").pack()
-
-        embed = tk.Frame(self.win_frame, width=600, height=600)  # creates embed frame for pygame window
-        embed.pack(side=TOP)
-        os.environ['SDL_WINDOWID'] = str(embed.winfo_id())
-        os.environ['SDL_VIDEODRIVER'] = 'windib'
-
-        self.window = pygame.display.set_mode((self.width, self.height))
-
     def init_grid(self):
-        for i in range(int(self.width/self.box_dim)):
-            for j in range(int(self.height/self.box_dim)):
-                pygame.draw.rect(self.window, self.COLORS[1], (i * self.box_dim, j * self.box_dim, self.box_dim, self.box_dim), 1)
-
+        for i in range(int(600/self.box_dim)):
+            for j in range(int(600/self.box_dim)):
+                self.box_updater(self.COLORS["BLACK"], 1, i, j)
 
     def box_updater(self, color, state, i = 1, j = 1):
         pygame.draw.rect(self.window, color, (i * self.box_dim, j * self.box_dim, self.box_dim, self.box_dim), state)
 
-    def return_main(self):
-        self.master_reset()
-        pygame.display.quit()
-        main = MainMenu(self.master)
-        main.run_main()
-
     def run_algorithm(self):
-        start_time = time.time()
-        while True:
-            done, closed_list, open_list = astar.path_step_wise(self.grid_list)
-            if done:
-                break
+        open_list = []
+        closed_list = []
+        if self.start_point == [] or self.end_point == []:
+            msbox.showerror("Coordinate Error", "No starting point inputs")
+        else:
+            start_time = time.time()
+            start = astar.Node(self.start_point, None)
+            end = astar.Node(self.end_point, None)
+            open_list.append(start)
+            while True:
+                done, returned_closed_list, returned_open_list = astar.path_step_wise(self.grid_list, end, open_list, closed_list)
+                if done:
+                    break
+                if self.step_alg:
+                    for open_node in returned_open_list:
+                        self.box_updater(self.COLORS["GREEN"], 0, open_node.pos[0], open_node.pos[1])
 
-            for open_node in open_list:
-                self.box_updater(self.COLORS["GREEN"], 0, open_node.pos[0], open_node.pos[1])
+                    for closed_node in returned_closed_list:
+                        self.box_updater(self.COLORS["RED"], 0, closed_node.pos[0], closed_node.pos[1])
 
-            for closed_node in closed_list:
-                self.box_updater(self.COLORS["RED"], 0, closed_node.pos[0], closed_node.pos[1])
+                    pygame.display.update()
+
+            path = []
+            current_node = returned_closed_list[-1]
+            while current_node is not None:
+                path.append(tuple(current_node.pos))
+                current_node = current_node.parent
+
+            time_found = time.time() - start_time
+            self.box_updater(self.COLORS["CYAN"], 0, path[-1][0], path[-1][1])
+            for path_node in path[1:-1]:
+                self.box_updater(self.COLORS["BLUE"], 0, path_node[0], path_node[1])
+
+            self.box_updater(self.COLORS["MAGENTA"], 0, path[0][0], path[0][1])
 
             pygame.display.update()
 
-        path = []
-        current_node = closed_list[-1]
-        while current_node is not None:
-            path.append(tuple(current_node.pos))
-            current_node = current_node.parent
+            print("done")
+            msbox.showinfo("Results", "Path found in {} seconds \nand in {} moves".format(round(time_found, 5), len(path)))
+            self.reset_grid()
 
-        print("path found in %s seconds" % (time.time() - start_time))
-        for path_node in path:
-            self.box_updater(self.COLORS["BLUE"], 0, path_node[0], path_node[1])
-
-        print("done")
-        #print(timeit.timeit('run_algorithm'))
-
-    def temp(self):
-        for k in range(1,25):
-            self.grid_list[15][k] = 1
-            self.box_updater((0,0,0), 0, 15, k)
-
-        '''for kk in range(1,28):
-            self.grid_list[kk][10] = 1
-            self.box_updater((0,0,0), 0, 10, kk)'''
+    def reset_grid(self):
+        for i in range(int(600/self.box_dim)):
+            for j in range(int(600/self.box_dim)):
+                self.box_updater(self.COLORS["GRAY"], 0, i, j)
+        self.init_grid()
+        self.grid_list = np.zeros((int(600/self.box_dim), int(600/self.box_dim)))
 
     def init_window(self):
         self.window.fill(self.BACKGROUND)
         self.init_grid()
 
-        buttonwin = tk.Frame(self.master)
-        buttonwin.pack(side=BOTTOM)
+        button_window = tk.Frame(self.master)
+        button_window.pack(side=BOTTOM)
 
-        #button1 = Button(buttonwin, text="Start")
-        #self.box_updater(self.COLORS["GREEN"], 0,))
-        button1 = Button(buttonwin, text="Start", command = lambda: self.run_algorithm())
-        #PopUps(self.master).run_pop()
+        button1 = Button(button_window, text = "Start", command = lambda: self.run_algorithm())
         button1.pack(side=LEFT)
-        button2 = Button(buttonwin, text = "Setup", command = lambda: self.temp()).pack(side=RIGHT)
 
-        button3 = Button(buttonwin, text="Return", command=lambda: self.return_main()).pack(side=RIGHT)
+        button2 = Button(button_window, text = "Setup", command = lambda: PopUps(self.master, self.window).run_pop())
+        button2.pack(side = RIGHT)
 
+        button3 = Button(button_window, text = "Reset", command = lambda: self.reset_grid())
+        button3.pack(side = RIGHT)
 
     def run_game(self):
         run = True
-        clock = pygame.time.Clock()
+        mouse_dragging = False
         self.init_window()
 
         while run:
             try:
-
                 pygame.display.update()
                 self.master.update()
                 for event in pygame.event.get():
                     if event.type == pygame.MOUSEBUTTONDOWN:
-                        print("mouse_down")
+                        mouse_dragging = True
+                    elif event.type == pygame.MOUSEBUTTONUP:
+                        mouse_dragging = False
+                    elif event.type == pygame.MOUSEMOTION:
+                        if mouse_dragging:
+                            mouse_pos = pygame.mouse.get_pos()
+                            mouse_pos = (int(mouse_pos[0]/self.box_dim), int(mouse_pos[1]/self.box_dim))
+                            print(mouse_pos)
+                            self.box_updater(self.COLORS["BLACK"], 0, mouse_pos[0], mouse_pos[1])
+                            self.grid_list[mouse_pos] = 1
+
             except pygame.error:
                 run = False
 
 
 class PopUps(GameMenu):
 
-    def __init__(self, parent):
-        super().__init__(parent)
+    def __init__(self, master, window):
+        super().__init__(master, window)
         self.popup_win = Toplevel()
+        self.popup_win.geometry("400x250")
+        self.popup_win_font = tkfont.Font(family='Helvetica', size=14)
 
+    def fixed_points(self, start_str, end_str, step, alg):
+        try:
+            if alg:
+                total_str = start_str[1:-1:1] + ", " + end_str[1:-1:1]
+                fixed_point_list = [int(num) for num in total_str.split(', ')]
 
-    def random_fixed_points(self):
-        rand_list = np.random.choice(20, 4, True)
+                GameMenu.start_point = fixed_point_list[:-2]
+                GameMenu.end_point = fixed_point_list[-2:]
+                GameMenu.step_alg = step
 
-        print(rand_list[2:])
-        print(rand_list[:-2])
+                self.box_updater(self.COLORS["GREEN"], 0, self.start_point[0], self.start_point[1])
+                self.box_updater(self.COLORS["RED"], 0, self.end_point[0], self.end_point[1])
 
-        print(np.linalg.norm(rand_list[2:] - rand_list[:-2]))
-        print(np.all(rand_list))
-        while np.all(rand_list) or (np.linalg.norm(rand_list[2:] - rand_list[:-2]) <= 5):
-            rand_list = np.random.choice(20, 4, True)
+                self.popup_win.destroy()
+            elif not alg:
+                msbox.showerror("Implementation Error", "Algorithm not implemented, please choose A* algorithm")
+            else:
+                msbox.showerror("Input Error", "No Algorithm chosen, please try again")
 
-        rand_start = rand_list[2:]
-        rand_end = rand_list[:-2]
-
-        self.box_updater(self.COLORS["GREEN"], 0, rand_start[0], rand_start[1])
-        self.box_updater(self.COLORS["RED"], 0, rand_end[0], rand_end[1])
-
-        self.popup_win.destroy()
-
+        except ValueError:
+            if start_str == "" or end_str == "":
+                msbox.showerror("Coordinate Error", "No coordinate inputs, please try again")
 
     def run_pop(self):
+        self.popup_win.title("Configurations")
 
-        start_entry = tk.Entry(self.popup_win)
-        start_entry.pack(side="left")
+        config_win = Frame(self.popup_win)
+        config_win.pack(fill = "both", expand = True, padx = 10, pady = 10)
 
-        end_entry = tk.Entry(self.popup_win)
-        end_entry.pack(side="left")
+        config_button_win = Frame(config_win)
+        config_button_win.pack(fill = "both", side = BOTTOM)
 
-        var_r = tk.IntVar()
-        var_r.get()
+        config_title = Label(config_win, text = "Configurations", font = self.popup_win_font)
+        config_title.pack(pady = 10)
 
-        astar_radio_btn = tk.Radiobutton(self.popup_win, variable=var_r, value="A", text="A*")
-        astar_radio_btn.pack()
+        config_settings_win = Frame(config_win)
+        config_settings_win.pack(side = TOP)
 
-        dijkstra_radio_btn = tk.Radiobutton(self.popup_win, variable=var_r, value="D", text="Dijkstra")
-        dijkstra_radio_btn.pack()
+        start_label = Label(config_settings_win, text = "Start")
+        start_label.grid(row = 0, column = 1)
 
-        label = tk.Label(self.popup_win, text="hi")
-        label.pack()
+        end_label = Label(config_settings_win, text = "End")
+        end_label.grid(row = 0, column = 2)
 
-        close_button = tk.Button(self.popup_win, text="close", command=lambda: self.popup_win.destroy())
-        close_button.pack()
+        point_label = Label(config_settings_win, text = "Coordinates", padx = 20)
+        point_label.grid(row = 1, column = 0)
+        start_entry = Entry(config_settings_win)
+        start_entry.grid(row = 1, column = 1)
 
-        rand_button = tk.Button(self.popup_win, text="random", command=lambda: self.random_fixed_points())
-        rand_button.pack()
+        end_entry = Entry(config_settings_win)
+        end_entry.grid(row = 1, column = 2)
+
+        def random_points():
+            if start_entry.get() != '' and end_entry.get() != '':
+                start_entry.delete(0, 'end')
+                end_entry.delete(0, 'end')
+            rand_list = np.random.choice(29, 4, True)
+
+            while np.array_equal(rand_list[:-2], rand_list[-2:]) or (np.linalg.norm(rand_list[-2:] - rand_list[:-2]) <= 10):
+                rand_list = np.random.choice(20, 4, True)
+
+            rand_list = list(rand_list)
+            start_entry.insert(0, "%s" % rand_list[-2:])
+            end_entry.insert(0, "%s" % rand_list[:-2])
+
+        alg_var = IntVar()
+
+        step_var = IntVar()
+
+        radio_label = Label(config_settings_win, text = "Algorithm", padx = 20, pady = 15)
+        radio_label.grid(row = 2, column = 0)
+
+        astar_radio_btn = Radiobutton(config_settings_win, variable = alg_var, value = 1, text = "A*")
+        astar_radio_btn.grid(row = 2, column = 1)
+
+        dijkstra_radio_btn = Radiobutton(config_settings_win, variable = alg_var, value = 0, text = "Dijkstra")
+        dijkstra_radio_btn.grid(row = 2, column = 2)
+
+        step_label = Label(config_settings_win, text = "Show Steps?", padx = 20)
+        step_label.grid(row = 3, column = 0)
+
+        step_check_button = Checkbutton(config_settings_win, variable = step_var, text = "")
+        step_check_button.grid(row=3, column = 1)
+
+
+
+        close_button = tk.Button(config_button_win, text="Confirm", command=lambda: self.fixed_points(start_entry.get(),
+        end_entry.get(), step_var.get(), alg_var.get()))
+        close_button.pack(side = RIGHT)
+
+        rand_button = tk.Button(config_button_win, text="Generate Random Coordinates", command=lambda: random_points())
+        rand_button.pack(side = LEFT)
+
+
+
 
 
 if __name__ == "__main__":
     root = Tk()
-    PathfinderApp = App(root)
+    root.title("A* App")
+
+    title_font = tkfont.Font(family='Helvetica', size=18, weight="bold")
+    label = Label(root, text="A* PathFinder", anchor=CENTER, pady=20, font=title_font).pack(side=TOP)
+
+    frame_win = tk.Frame(root).pack(side= TOP, fill="both", expand=True)
+
+    embed = tk.Frame(frame_win, width=600, height=600)  # creates embed frame for pygame window
+    embed.pack(side=TOP)
+    os.environ['SDL_WINDOWID'] = str(embed.winfo_id())
+    os.environ['SDL_VIDEODRIVER'] = 'windib'
+
+    win = pygame.display.set_mode((600,600))
+
+    PathfinderApp = App(root, win)
     PathfinderApp.run_app()
     root.mainloop()
